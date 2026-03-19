@@ -243,10 +243,6 @@
     75%  { transform: scale(1.1); }
     100% { transform: scale(1); }
   }
-  .card-emoji.speaking { animation: speakPulse 0.5s ease forwards; }
-  .card-chinese.speaking { animation: speakPulse 0.5s ease forwards; }
-  .card-pinyin.speaking { animation: speakPulse 0.5s ease forwards; }
-
   @keyframes emojiPop {
     0%   { transform: scale(1) rotate(0deg); }
     20%  { transform: scale(1.5) rotate(-10deg); }
@@ -259,6 +255,9 @@
   .card.revealed .card-emoji {
     animation: emojiPop 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
   }
+  .card .card-emoji.speaking { animation: speakPulse 0.5s ease forwards; }
+  .card .card-chinese.speaking { animation: speakPulse 0.5s ease forwards; }
+  .card .card-pinyin.speaking { animation: speakPulse 0.5s ease forwards; }
   .card-chinese {
     font-size: clamp(3rem, 12vw, 5rem);
     font-weight: 900;
@@ -922,15 +921,22 @@ function createCardEl(card, isTop) {
 
   function triggerSpeakAnim() {
     const emojiEl  = el.querySelector('.card-emoji');
-    const wordEl   = el.querySelector('.card-chinese');
-    const pinyinEl = el.querySelector('.card-pinyin');
-    [emojiEl, wordEl, pinyinEl].forEach(node => {
-      if (!node) return;
-      node.classList.remove('speaking');
-      void node.offsetWidth; // reflow to restart animation
-      node.classList.add('speaking');
-      setTimeout(() => node.classList.remove('speaking'), 500);
-    });
+    const nodes    = [el.querySelector('.card-chinese'), el.querySelector('.card-pinyin')].filter(Boolean);
+    const keyframes = [
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.18)' },
+      { transform: 'scale(0.95)' },
+      { transform: 'scale(1.1)' },
+      { transform: 'scale(1)' },
+    ];
+    const timing = { duration: 500, easing: 'ease', fill: 'none' };
+    // Use Web Animations API on emoji to avoid CSS emojiPop interference
+    if (emojiEl) emojiEl.animate(keyframes, timing);
+    // CSS class animation for word + pinyin
+    nodes.forEach(n => n.classList.remove('speaking'));
+    void el.offsetWidth;
+    nodes.forEach(n => n.classList.add('speaking'));
+    setTimeout(() => nodes.forEach(n => n.classList.remove('speaking')), 500);
   }
 
   if (isTop) {
