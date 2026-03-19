@@ -156,7 +156,7 @@
   .card.revealed .card-english { opacity: 1; }
 
   .tap-hint {
-    font-size: 0.85rem;
+    font-size: 1.2rem;
     color: #bbb;
     font-weight: 600;
     transition: opacity 0.3s;
@@ -185,8 +185,9 @@
     display: flex;
     justify-content: space-between;
     width: min(360px, 88vw);
-    margin-top: 14px;
+    margin-top: 48px;
     padding: 0 4px;
+    gap: 32px;
   }
   .hint-pill {
     display: flex; align-items: center; gap: 6px;
@@ -260,6 +261,133 @@
   }
   .speak-btn:hover { background: #E9ECEF; }
   .speak-btn.speaking { background: #D3F9D8; }
+
+  /* ─── Progress bar ─── */
+  .progress-wrap {
+    width: min(360px, 88vw);
+    margin: 10px 0 4px;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #aaa;
+    margin-bottom: 6px;
+  }
+  .progress-meta .level-label { color: #FF6B6B; }
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    background: #F0F0F0;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FF6B6B, #FFD43B);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .progress-fill.level-up {
+    background: linear-gradient(90deg, #51CF66, #74C0FC);
+  }
+
+  /* ─── Feedback button ─── */
+  .feedback-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #fff;
+    border: 2px solid #E9ECEF;
+    border-radius: 24px;
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    color: #555;
+    z-index: 50;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .feedback-fab:hover { border-color: #FF6B6B; box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+
+  /* ─── Feedback modal ─── */
+  .feedback-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0;
+  }
+  .feedback-overlay.open { display: flex; }
+  .feedback-modal {
+    background: #fff;
+    border-radius: 28px 28px 0 0;
+    padding: 28px 24px 36px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.12);
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .feedback-modal h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 6px; }
+  .feedback-modal p  { font-size: 0.9rem; color: #888; margin-bottom: 20px; }
+
+  /* Star rating */
+  .star-row { display: flex; gap: 10px; margin-bottom: 20px; }
+  .star {
+    font-size: 2.2rem;
+    cursor: pointer;
+    transition: transform 0.15s;
+    filter: grayscale(1) opacity(0.35);
+  }
+  .star.active { filter: none; transform: scale(1.15); }
+
+  /* Comment */
+  .feedback-textarea {
+    width: 100%;
+    border: 2px solid #E9ECEF;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: none;
+    height: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+  .feedback-textarea:focus { border-color: #FF6B6B; }
+
+  .feedback-submit {
+    width: 100%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .feedback-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .feedback-success {
+    text-align: center;
+    padding: 12px 0 4px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2F9E44;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -277,6 +405,17 @@
   <div class="score-item">
     <div class="score-dot practice"></div>
     <span id="practiceCount">0</span> Practice
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span class="level-label" id="levelLabel">Level 1</span>
+    <span id="progressText">0 / 8</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
   </div>
 </div>
 
@@ -305,6 +444,27 @@
   <div class="done-title">Great job!</div>
   <div class="done-sub" id="doneSub"></div>
   <button class="restart-btn" id="restartBtn">Play Again 🔄</button>
+</div>
+
+<!-- Feedback FAB -->
+<button class="feedback-fab" id="feedbackFab">💬 Feedback</button>
+
+<!-- Feedback modal -->
+<div class="feedback-overlay" id="feedbackOverlay">
+  <div class="feedback-modal">
+    <h2>Leave Feedback 💬</h2>
+    <p>How are you finding the app?</p>
+    <div class="star-row" id="starRow">
+      <span class="star" data-v="1">⭐</span>
+      <span class="star" data-v="2">⭐</span>
+      <span class="star" data-v="3">⭐</span>
+      <span class="star" data-v="4">⭐</span>
+      <span class="star" data-v="5">⭐</span>
+    </div>
+    <textarea class="feedback-textarea" id="feedbackComment" placeholder="Any thoughts? (optional)"></textarea>
+    <button class="feedback-submit" id="feedbackSubmit" disabled>Send Feedback</button>
+    <div class="feedback-success" id="feedbackSuccess">✅ Thanks for your feedback!</div>
+  </div>
 </div>
 
 <!-- Confetti container -->
@@ -389,6 +549,9 @@ let currentCat = 'animals';
 let queue = [];
 let knowCount = 0;
 let practiceCount = 0;
+const CARDS_PER_LEVEL = 8;
+let totalSwiped = 0;
+let currentLevel = 1;
 let topCard = null;
 let revealed = false;
 
@@ -446,9 +609,10 @@ function shuffle(arr) {
 }
 
 function startDeck() {
-  knowCount = 0; practiceCount = 0;
+  knowCount = 0; practiceCount = 0; totalSwiped = 0; currentLevel = 1;
   document.getElementById('knowCount').textContent = 0;
   document.getElementById('practiceCount').textContent = 0;
+  updateProgress();
   queue = shuffle(CATEGORIES[currentCat].cards);
 
   document.getElementById('doneScreen').classList.remove('show');
@@ -587,6 +751,8 @@ function flyOut(dir) {
     document.getElementById('practiceCount').textContent = practiceCount;
   }
 
+  totalSwiped++;
+  updateProgress();
   queue.shift();
 
   setTimeout(() => {
@@ -632,8 +798,93 @@ function confetti(count = 30) {
   setTimeout(() => { el.innerHTML = ''; }, 2000);
 }
 
+// ─── Progress bar ─────────────────────────────────────
+function updateProgress() {
+  const posInLevel = totalSwiped % CARDS_PER_LEVEL;
+  const newLevel = Math.floor(totalSwiped / CARDS_PER_LEVEL) + 1;
+  const pct = (posInLevel / CARDS_PER_LEVEL) * 100;
+
+  const fill = document.getElementById('progressFill');
+  const label = document.getElementById('levelLabel');
+  const text = document.getElementById('progressText');
+
+  if (newLevel > currentLevel) {
+    // Level-up flash animation
+    currentLevel = newLevel;
+    fill.classList.add('level-up');
+    fill.style.width = '100%';
+    setTimeout(() => {
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      fill.classList.remove('level-up');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        fill.style.transition = 'width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        fill.style.width = pct + '%';
+      }));
+    }, 600);
+  } else {
+    fill.style.width = pct + '%';
+  }
+
+  label.textContent = `Level ${currentLevel}`;
+  text.textContent = `${posInLevel} / ${CARDS_PER_LEVEL}`;
+}
+
 // ─── Init ─────────────────────────────────────────────
 startDeck();
+
+// ─── Feedback ─────────────────────────────────────────
+const APPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+
+let selectedRating = 0;
+
+document.getElementById('feedbackFab').onclick = () => {
+  selectedRating = 0;
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+  document.getElementById('feedbackComment').value = '';
+  document.getElementById('feedbackSubmit').disabled = true;
+  document.getElementById('feedbackSuccess').style.display = 'none';
+  document.getElementById('feedbackOverlay').classList.add('open');
+};
+
+document.getElementById('feedbackOverlay').onclick = (e) => {
+  if (e.target === document.getElementById('feedbackOverlay'))
+    document.getElementById('feedbackOverlay').classList.remove('open');
+};
+
+document.getElementById('starRow').onclick = (e) => {
+  const star = e.target.closest('.star');
+  if (!star) return;
+  selectedRating = parseInt(star.dataset.v);
+  document.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.v) <= selectedRating);
+  });
+  document.getElementById('feedbackSubmit').disabled = false;
+};
+
+document.getElementById('feedbackSubmit').onclick = async () => {
+  const btn = document.getElementById('feedbackSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const payload = {
+    rating: selectedRating,
+    comment: document.getElementById('feedbackComment').value.trim()
+  };
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (_) {}
+
+  btn.textContent = 'Send Feedback';
+  document.getElementById('feedbackSuccess').style.display = 'block';
+  setTimeout(() => document.getElementById('feedbackOverlay').classList.remove('open'), 1800);
+};
 </script>
 </body>
 </html>
