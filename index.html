@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>学中文 Learn Chinese!</title>
+<title>Learn Languages! 🌍</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -36,8 +36,51 @@
     justify-content: space-between;
   }
 
-  .logo { font-size: 1.5rem; font-weight: 900; color: #FF6B6B; }
-  .logo span { color: #FFD43B; }
+  .logo {
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    padding: 7px 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    background-clip: padding-box;
+  }
+  .logo .lingo { color: #FF6B6B; }
+  .logo .play  { color: #FFD43B; }
+
+  /* ─── Language selector ─── */
+  .lang-strip {
+    width: 100%;
+    padding: 10px 16px 0;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    justify-content: center;
+  }
+  .lang-strip::-webkit-scrollbar { display: none; }
+  .lang-pill {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border: 2px solid #E9ECEF;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #fff;
+    color: #666;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .lang-pill:hover { border-color: #FF6B6B; }
+  .lang-pill.active { background: #FF6B6B; border-color: #FF6B6B; color: #fff; }
 
   .category-btn {
     background: #fff;
@@ -393,9 +436,12 @@
 <body>
 
 <header>
-  <div class="logo">学<span>中</span>文</div>
+  <div class="logo"><span class="lingo">Lingo</span><span class="play">Play</span></div>
   <button class="category-btn" id="catBtn">🐼 Animals ▾</button>
 </header>
+
+<!-- Language selector -->
+<div class="lang-strip" id="langStrip"></div>
 
 <div class="score-bar">
   <div class="score-item">
@@ -471,80 +517,82 @@
 <div class="celebrate" id="celebrate"></div>
 
 <script>
+const LANGUAGES = {
+  zh: { name: 'Chinese',  flag: '🇨🇳', locale: 'zh-CN', label: '中文' },
+  ja: { name: 'Japanese', flag: '🇯🇵', locale: 'ja-JP', label: '日本語' },
+  ko: { name: 'Korean',   flag: '🇰🇷', locale: 'ko-KR', label: '한국어' },
+  es: { name: 'Spanish',  flag: '🇪🇸', locale: 'es-ES', label: 'Español' },
+  fr: { name: 'French',   flag: '🇫🇷', locale: 'fr-FR', label: 'Français' },
+  ru: { name: 'Russian',  flag: '🇷🇺', locale: 'ru-RU', label: 'Русский' },
+  hi: { name: 'Hindi',    flag: '🇮🇳', locale: 'hi-IN', label: 'हिन्दी' },
+};
+
 const CATEGORIES = {
   animals: {
-    label: '🐼 Animals',
-    emoji: '🐼',
+    label: '🐼 Animals', emoji: '🐼',
     cards: [
-      { zh: '猫', pinyin: 'māo', en: 'Cat', emoji: '🐱' },
-      { zh: '狗', pinyin: 'gǒu', en: 'Dog', emoji: '🐶' },
-      { zh: '鱼', pinyin: 'yú',  en: 'Fish', emoji: '🐟' },
-      { zh: '鸟', pinyin: 'niǎo', en: 'Bird', emoji: '🐦' },
-      { zh: '马', pinyin: 'mǎ',  en: 'Horse', emoji: '🐴' },
-      { zh: '猪', pinyin: 'zhū', en: 'Pig', emoji: '🐷' },
-      { zh: '牛', pinyin: 'niú', en: 'Cow', emoji: '🐮' },
-      { zh: '羊', pinyin: 'yáng', en: 'Sheep', emoji: '🐑' },
+      { en:'Cat',    emoji:'🐱', zh:{w:'猫',r:'māo'},     ja:{w:'ねこ',r:'neko'},       ko:{w:'고양이',r:'goyang-i'}, es:{w:'gato'},      fr:{w:'chat'},     ru:{w:'кошка',r:'koshka'},   hi:{w:'बिल्ली',r:'billi'} },
+      { en:'Dog',    emoji:'🐶', zh:{w:'狗',r:'gǒu'},     ja:{w:'いぬ',r:'inu'},        ko:{w:'강아지',r:'gang-a-ji'},es:{w:'perro'},     fr:{w:'chien'},    ru:{w:'собака',r:'sobaka'},  hi:{w:'कुत्ता',r:'kutta'} },
+      { en:'Fish',   emoji:'🐟', zh:{w:'鱼',r:'yú'},      ja:{w:'さかな',r:'sakana'},   ko:{w:'물고기',r:'mul-go-gi'},es:{w:'pez'},       fr:{w:'poisson'},  ru:{w:'рыба',r:'ryba'},      hi:{w:'मछली',r:'machli'} },
+      { en:'Bird',   emoji:'🐦', zh:{w:'鸟',r:'niǎo'},    ja:{w:'とり',r:'tori'},       ko:{w:'새',r:'sae'},          es:{w:'pájaro'},    fr:{w:'oiseau'},   ru:{w:'птица',r:'ptitsa'},   hi:{w:'चिड़िया',r:'chidiya'} },
+      { en:'Horse',  emoji:'🐴', zh:{w:'马',r:'mǎ'},      ja:{w:'うま',r:'uma'},        ko:{w:'말',r:'mal'},          es:{w:'caballo'},   fr:{w:'cheval'},   ru:{w:'лошадь',r:'loshad'},  hi:{w:'घोड़ा',r:'ghoda'} },
+      { en:'Pig',    emoji:'🐷', zh:{w:'猪',r:'zhū'},     ja:{w:'ぶた',r:'buta'},       ko:{w:'돼지',r:'dwae-ji'},    es:{w:'cerdo'},     fr:{w:'cochon'},   ru:{w:'свинья',r:'svinya'},  hi:{w:'सूअर',r:'suar'} },
+      { en:'Cow',    emoji:'🐮', zh:{w:'牛',r:'niú'},     ja:{w:'うし',r:'ushi'},       ko:{w:'소',r:'so'},           es:{w:'vaca'},      fr:{w:'vache'},    ru:{w:'корова',r:'korova'},  hi:{w:'गाय',r:'gaay'} },
+      { en:'Sheep',  emoji:'🐑', zh:{w:'羊',r:'yáng'},    ja:{w:'ひつじ',r:'hitsuji'},  ko:{w:'양',r:'yang'},         es:{w:'oveja'},     fr:{w:'mouton'},   ru:{w:'овца',r:'ovtsa'},     hi:{w:'भेड़',r:'bhed'} },
     ]
   },
   colors: {
-    label: '🌈 Colors',
-    emoji: '🌈',
+    label: '🌈 Colors', emoji: '🌈',
     cards: [
-      { zh: '红', pinyin: 'hóng', en: 'Red', emoji: '🔴' },
-      { zh: '蓝', pinyin: 'lán',  en: 'Blue', emoji: '🔵' },
-      { zh: '绿', pinyin: 'lǜ',   en: 'Green', emoji: '🟢' },
-      { zh: '黄', pinyin: 'huáng', en: 'Yellow', emoji: '🟡' },
-      { zh: '粉', pinyin: 'fěn',  en: 'Pink', emoji: '🩷' },
-      { zh: '紫', pinyin: 'zǐ',   en: 'Purple', emoji: '🟣' },
-      { zh: '白', pinyin: 'bái',  en: 'White', emoji: '⚪' },
-      { zh: '黑', pinyin: 'hēi',  en: 'Black', emoji: '⚫' },
+      { en:'Red',    emoji:'🔴', zh:{w:'红',r:'hóng'},    ja:{w:'あか',r:'aka'},        ko:{w:'빨간',r:'ppalgan'},    es:{w:'rojo'},      fr:{w:'rouge'},    ru:{w:'красный',r:'krasny'},     hi:{w:'लाल',r:'laal'} },
+      { en:'Blue',   emoji:'🔵', zh:{w:'蓝',r:'lán'},     ja:{w:'あお',r:'ao'},         ko:{w:'파란',r:'paran'},      es:{w:'azul'},      fr:{w:'bleu'},     ru:{w:'синий',r:'siniy'},        hi:{w:'नीला',r:'neela'} },
+      { en:'Green',  emoji:'🟢', zh:{w:'绿',r:'lǜ'},      ja:{w:'みどり',r:'midori'},   ko:{w:'초록',r:'chorok'},     es:{w:'verde'},     fr:{w:'vert'},     ru:{w:'зелёный',r:'zelyony'},    hi:{w:'हरा',r:'hara'} },
+      { en:'Yellow', emoji:'🟡', zh:{w:'黄',r:'huáng'},   ja:{w:'きいろ',r:'kiiro'},    ko:{w:'노란',r:'noran'},      es:{w:'amarillo'},  fr:{w:'jaune'},    ru:{w:'жёлтый',r:'zholty'},      hi:{w:'पीला',r:'peela'} },
+      { en:'Pink',   emoji:'🩷', zh:{w:'粉',r:'fěn'},     ja:{w:'ピンク',r:'pinku'},    ko:{w:'분홍',r:'bunhong'},    es:{w:'rosa'},      fr:{w:'rose'},     ru:{w:'розовый',r:'rozovy'},     hi:{w:'गुलाबी',r:'gulaabi'} },
+      { en:'Purple', emoji:'🟣', zh:{w:'紫',r:'zǐ'},      ja:{w:'むらさき',r:'murasaki'},ko:{w:'보라',r:'bora'},      es:{w:'morado'},    fr:{w:'violet'},   ru:{w:'фиолетовый',r:'fioletovy'},hi:{w:'बैंगनी',r:'baingani'} },
+      { en:'White',  emoji:'⚪', zh:{w:'白',r:'bái'},     ja:{w:'しろ',r:'shiro'},      ko:{w:'하얀',r:'hayan'},      es:{w:'blanco'},    fr:{w:'blanc'},    ru:{w:'белый',r:'bely'},         hi:{w:'सफ़ेद',r:'safed'} },
+      { en:'Black',  emoji:'⚫', zh:{w:'黑',r:'hēi'},     ja:{w:'くろ',r:'kuro'},       ko:{w:'검정',r:'geomjeong'},  es:{w:'negro'},     fr:{w:'noir'},     ru:{w:'чёрный',r:'chorny'},      hi:{w:'काला',r:'kaala'} },
     ]
   },
   numbers: {
-    label: '🔢 Numbers',
-    emoji: '🔢',
+    label: '🔢 Numbers', emoji: '🔢',
     cards: [
-      { zh: '一', pinyin: 'yī',   en: 'One',   emoji: '1️⃣' },
-      { zh: '二', pinyin: 'èr',   en: 'Two',   emoji: '2️⃣' },
-      { zh: '三', pinyin: 'sān',  en: 'Three', emoji: '3️⃣' },
-      { zh: '四', pinyin: 'sì',   en: 'Four',  emoji: '4️⃣' },
-      { zh: '五', pinyin: 'wǔ',   en: 'Five',  emoji: '5️⃣' },
-      { zh: '六', pinyin: 'liù',  en: 'Six',   emoji: '6️⃣' },
-      { zh: '七', pinyin: 'qī',   en: 'Seven', emoji: '7️⃣' },
-      { zh: '八', pinyin: 'bā',   en: 'Eight', emoji: '8️⃣' },
-      { zh: '九', pinyin: 'jiǔ',  en: 'Nine',  emoji: '9️⃣' },
-      { zh: '十', pinyin: 'shí',  en: 'Ten',   emoji: '🔟' },
+      { en:'One',   emoji:'1️⃣', zh:{w:'一',r:'yī'},   ja:{w:'いち',r:'ichi'}, ko:{w:'일',r:'il'},  es:{w:'uno'},    fr:{w:'un'},     ru:{w:'один',r:'odin'},    hi:{w:'एक',r:'ek'} },
+      { en:'Two',   emoji:'2️⃣', zh:{w:'二',r:'èr'},   ja:{w:'に',r:'ni'},     ko:{w:'이',r:'i'},   es:{w:'dos'},    fr:{w:'deux'},   ru:{w:'два',r:'dva'},      hi:{w:'दो',r:'do'} },
+      { en:'Three', emoji:'3️⃣', zh:{w:'三',r:'sān'},  ja:{w:'さん',r:'san'},  ko:{w:'삼',r:'sam'}, es:{w:'tres'},   fr:{w:'trois'},  ru:{w:'три',r:'tri'},      hi:{w:'तीन',r:'teen'} },
+      { en:'Four',  emoji:'4️⃣', zh:{w:'四',r:'sì'},   ja:{w:'よん',r:'yon'},  ko:{w:'사',r:'sa'},  es:{w:'cuatro'}, fr:{w:'quatre'}, ru:{w:'четыре',r:'chetyre'},hi:{w:'चार',r:'chaar'} },
+      { en:'Five',  emoji:'5️⃣', zh:{w:'五',r:'wǔ'},   ja:{w:'ご',r:'go'},     ko:{w:'오',r:'o'},   es:{w:'cinco'},  fr:{w:'cinq'},   ru:{w:'пять',r:'pyat'},    hi:{w:'पाँच',r:'paanch'} },
+      { en:'Six',   emoji:'6️⃣', zh:{w:'六',r:'liù'},  ja:{w:'ろく',r:'roku'}, ko:{w:'육',r:'yuk'}, es:{w:'seis'},   fr:{w:'six'},    ru:{w:'шесть',r:'shest'},  hi:{w:'छह',r:'chhah'} },
+      { en:'Seven', emoji:'7️⃣', zh:{w:'七',r:'qī'},   ja:{w:'なな',r:'nana'}, ko:{w:'칠',r:'chil'},es:{w:'siete'},  fr:{w:'sept'},   ru:{w:'семь',r:'sem'},     hi:{w:'सात',r:'saat'} },
+      { en:'Eight', emoji:'8️⃣', zh:{w:'八',r:'bā'},   ja:{w:'はち',r:'hachi'},ko:{w:'팔',r:'pal'}, es:{w:'ocho'},   fr:{w:'huit'},   ru:{w:'восемь',r:'vosem'}, hi:{w:'आठ',r:'aath'} },
     ]
   },
   greetings: {
-    label: '👋 Greetings',
-    emoji: '👋',
+    label: '👋 Greetings', emoji: '👋',
     cards: [
-      { zh: '你好', pinyin: 'nǐ hǎo',    en: 'Hello',      emoji: '👋' },
-      { zh: '再见', pinyin: 'zài jiàn',  en: 'Goodbye',    emoji: '🤚' },
-      { zh: '谢谢', pinyin: 'xiè xie',   en: 'Thank you',  emoji: '🙏' },
-      { zh: '对不起', pinyin: 'duì bu qǐ', en: 'Sorry',    emoji: '😔' },
-      { zh: '好的', pinyin: 'hǎo de',    en: 'Okay',       emoji: '👍' },
-      { zh: '爱你', pinyin: 'ài nǐ',     en: 'Love you',   emoji: '❤️' },
+      { en:'Hello',     emoji:'👋', zh:{w:'你好',r:'nǐ hǎo'},     ja:{w:'こんにちは',r:'konnichiwa'}, ko:{w:'안녕',r:'annyeong'},      es:{w:'hola'},       fr:{w:'bonjour'},    ru:{w:'привет',r:'privet'},          hi:{w:'नमस्ते',r:'namaste'} },
+      { en:'Goodbye',   emoji:'🤚', zh:{w:'再见',r:'zài jiàn'},   ja:{w:'さようなら',r:'sayounara'},  ko:{w:'잘가',r:'jalga'},          es:{w:'adiós'},      fr:{w:'au revoir'},  ru:{w:'пока',r:'poka'},              hi:{w:'अलविदा',r:'alvida'} },
+      { en:'Thank you', emoji:'🙏', zh:{w:'谢谢',r:'xiè xie'},    ja:{w:'ありがとう',r:'arigatou'},   ko:{w:'감사해요',r:'gamsahaeyo'}, es:{w:'gracias'},    fr:{w:'merci'},      ru:{w:'спасибо',r:'spasibo'},        hi:{w:'धन्यवाद',r:'dhanyavaad'} },
+      { en:'Sorry',     emoji:'😔', zh:{w:'对不起',r:'duì bu qǐ'},ja:{w:'ごめんなさい',r:'gomennasai'},ko:{w:'미안해요',r:'mianhaeyo'}, es:{w:'lo siento'},  fr:{w:'désolé'},     ru:{w:'извини',r:'izvini'},          hi:{w:'माफ़ करो',r:'maaf karo'} },
+      { en:'Okay',      emoji:'👍', zh:{w:'好的',r:'hǎo de'},     ja:{w:'はい',r:'hai'},              ko:{w:'좋아요',r:'jo-ayo'},       es:{w:'vale'},       fr:{w:"d'accord"},   ru:{w:'хорошо',r:'khorosho'},        hi:{w:'ठीक है',r:'theek hai'} },
+      { en:'Love you',  emoji:'❤️', zh:{w:'爱你',r:'ài nǐ'},      ja:{w:'だいすき',r:'daisuki'},      ko:{w:'사랑해',r:'saranghae'},    es:{w:'te quiero'},  fr:{w:'je t\'aime'}, ru:{w:'люблю тебя',r:'lyublyu tebya'},hi:{w:'प्यार है',r:'pyaar hai'} },
     ]
   },
   family: {
-    label: '👨‍👩‍👧 Family',
-    emoji: '👨‍👩‍👧',
+    label: '👨‍👩‍👧 Family', emoji: '👨‍👩‍👧',
     cards: [
-      { zh: '爸爸', pinyin: 'bà ba',  en: 'Dad',       emoji: '👨' },
-      { zh: '妈妈', pinyin: 'mā ma',  en: 'Mum',       emoji: '👩' },
-      { zh: '哥哥', pinyin: 'gē ge',  en: 'Big brother', emoji: '👦' },
-      { zh: '姐姐', pinyin: 'jiě jie', en: 'Big sister', emoji: '👧' },
-      { zh: '弟弟', pinyin: 'dì di',  en: 'Little bro', emoji: '👦' },
-      { zh: '妹妹', pinyin: 'mèi mei', en: 'Little sis', emoji: '👧' },
-      { zh: '爷爷', pinyin: 'yé ye',  en: 'Grandpa',   emoji: '👴' },
-      { zh: '奶奶', pinyin: 'nǎi nai', en: 'Grandma',  emoji: '👵' },
+      { en:'Dad',      emoji:'👨', zh:{w:'爸爸',r:'bà ba'},   ja:{w:'おとうさん',r:'otousan'},  ko:{w:'아빠',r:'appa'},        es:{w:'papá'},      fr:{w:'papa'},       ru:{w:'папа',r:'papa'},       hi:{w:'पापा',r:'papa'} },
+      { en:'Mum',      emoji:'👩', zh:{w:'妈妈',r:'mā ma'},   ja:{w:'おかあさん',r:'okaasan'},  ko:{w:'엄마',r:'eomma'},       es:{w:'mamá'},      fr:{w:'maman'},      ru:{w:'мама',r:'mama'},       hi:{w:'माँ',r:'maa'} },
+      { en:'Big bro',  emoji:'👦', zh:{w:'哥哥',r:'gē ge'},   ja:{w:'おにいさん',r:'oniisan'},  ko:{w:'오빠',r:'oppa'},        es:{w:'hermano'},   fr:{w:'frère'},      ru:{w:'брат',r:'brat'},       hi:{w:'भाई',r:'bhai'} },
+      { en:'Big sis',  emoji:'👧', zh:{w:'姐姐',r:'jiě jie'}, ja:{w:'おねえさん',r:'oneesan'},  ko:{w:'언니',r:'unni'},        es:{w:'hermana'},   fr:{w:'sœur'},       ru:{w:'сестра',r:'sestra'},   hi:{w:'दीदी',r:'didi'} },
+      { en:'Grandpa',  emoji:'👴', zh:{w:'爷爷',r:'yé ye'},   ja:{w:'おじいさん',r:'ojiisan'},  ko:{w:'할아버지',r:'harabeoji'},es:{w:'abuelo'},   fr:{w:'grand-père'}, ru:{w:'дедушка',r:'dedushka'},hi:{w:'दादा',r:'dada'} },
+      { en:'Grandma',  emoji:'👵', zh:{w:'奶奶',r:'nǎi nai'}, ja:{w:'おばあさん',r:'obaasan'},  ko:{w:'할머니',r:'halmeoni'},  es:{w:'abuela'},   fr:{w:'grand-mère'}, ru:{w:'бабушка',r:'babushka'},hi:{w:'दादी',r:'dadi'} },
     ]
   },
 };
 
 // ─── State ───────────────────────────────────────────
+let currentLang = 'zh';
 let currentCat = 'animals';
 let queue = [];
 let knowCount = 0;
@@ -565,10 +613,25 @@ function speak(text) {
   if (!window.speechSynthesis) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN';
+  u.lang = LANGUAGES[currentLang].locale;
   u.rate = 0.85;
   speechSynthesis.speak(u);
 }
+
+// ─── Build language picker ───────────────────────────
+const langStrip = document.getElementById('langStrip');
+Object.entries(LANGUAGES).forEach(([key, lang]) => {
+  const pill = document.createElement('button');
+  pill.className = 'lang-pill' + (key === currentLang ? ' active' : '');
+  pill.innerHTML = `${lang.flag} ${lang.name}`;
+  pill.onclick = () => {
+    currentLang = key;
+    document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    startDeck();
+  };
+  langStrip.appendChild(pill);
+});
 
 // ─── Build category picker ───────────────────────────
 const catGrid = document.getElementById('catGrid');
@@ -641,33 +704,36 @@ function renderCards() {
 }
 
 function createCardEl(card, isTop) {
+  const lang = card[currentLang];
+  const word = lang.w;
+  const rom  = lang.r || '';
+
   const el = document.createElement('div');
   el.className = 'card' + (isTop ? ' top' : '');
   el.innerHTML = `
     <div class="swipe-label know">Know it! ✅</div>
     <div class="swipe-label practice">Practice 🔄</div>
     <div class="card-emoji">${card.emoji}</div>
-    <div class="card-chinese">${card.zh}</div>
-    <div class="card-pinyin">${card.pinyin}</div>
+    <div class="card-chinese">${word}</div>
+    <div class="card-pinyin">${rom}</div>
     <div class="card-english">${card.en}</div>
     <div class="tap-hint">👆 Tap to reveal</div>
     <button class="speak-btn" title="Hear it">🔊</button>
   `;
 
   if (isTop) {
-    // tap to reveal
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('speak-btn')) {
-        speak(card.zh);
+        speak(word);
         e.target.classList.add('speaking');
         setTimeout(() => e.target.classList.remove('speaking'), 1200);
         return;
       }
-      if (Math.abs(currentX) > 5) return; // was a swipe, not tap
+      if (Math.abs(currentX) > 5) return;
       if (!revealed) {
         el.classList.add('revealed');
         revealed = true;
-        speak(card.zh);
+        speak(word);
       }
     });
   }
