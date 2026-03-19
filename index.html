@@ -52,10 +52,37 @@
   .logo .lingo { color: #FF6B6B; }
   .logo .play  { color: #FFD43B; }
 
+  /* ─── Native language selector ─── */
+  .native-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 20px 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #aaa;
+  }
+  .native-select {
+    border: 2px solid #E9ECEF;
+    border-radius: 14px;
+    padding: 5px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: inherit;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .native-select:focus { border-color: #FF6B6B; }
+
   /* ─── Language selector ─── */
   .lang-strip {
     width: 100%;
-    padding: 10px 16px 0;
+    padding: 44px 16px 0;
     display: flex;
     gap: 8px;
     overflow-x: auto;
@@ -166,9 +193,40 @@
     gap: 12px;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.08s ease-out, box-shadow 0.08s;
+    transition: transform 0.08s ease-out, box-shadow 0.08s, border-color 0.3s, background 0.3s;
     will-change: transform;
-    overflow: hidden;
+  }
+
+  /* Rainbow border ring — default state */
+  @keyframes rainbowSpin {
+    from { filter: hue-rotate(0deg); }
+    to   { filter: hue-rotate(360deg); }
+  }
+  .card.top {
+    isolation: isolate;
+  }
+  /* Default state — plain subtle border */
+  .card.top::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 34px;
+    padding: 6px;
+    background: conic-gradient(from 0deg, #ff0000, #ff8800, #ffff00, #00dd00, #00ccff, #0044ff, #aa00ff, #ff0000);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: rainbowSpin 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+
+  /* Revealed state — rainbow border appears */
+  .card.top.revealed::after {
+    opacity: 1;
   }
 
   /* back cards peek effect */
@@ -176,7 +234,24 @@
   .card:nth-child(3) { transform: translate(-3px, 14px) rotate(-1deg); z-index: 0; }
   .card.top { z-index: 10; }
 
-  .card-emoji { font-size: clamp(4rem, 14vw, 6rem); line-height: 1; }
+  .card-emoji {
+    font-size: clamp(4rem, 14vw, 6rem);
+    line-height: 1;
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+  @keyframes emojiPop {
+    0%   { transform: scale(1) rotate(0deg); }
+    20%  { transform: scale(1.5) rotate(-10deg); }
+    40%  { transform: scale(1.6) rotate(10deg); }
+    60%  { transform: scale(1.4) rotate(-6deg); }
+    75%  { transform: scale(1.5) rotate(4deg); }
+    90%  { transform: scale(1.1) rotate(-2deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .card.revealed .card-emoji {
+    animation: emojiPop 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  }
   .card-chinese {
     font-size: clamp(3rem, 12vw, 5rem);
     font-weight: 900;
@@ -241,6 +316,32 @@
   }
   .hint-pill.left { background: #FFE0E0; color: #E03131; }
   .hint-pill.right { background: #D3F9D8; color: #2F9E44; }
+
+  /* ─── Swipe continue hint ─── */
+  .swipe-continue {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #bbb;
+    margin-top: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .swipe-continue.show { opacity: 1; }
+
+  @keyframes nudgeLeft {
+    0%, 100% { transform: translateX(0); }
+    40%       { transform: translateX(-6px); }
+  }
+  @keyframes nudgeRight {
+    0%, 100% { transform: translateX(0); }
+    40%       { transform: translateX(6px); }
+  }
+  .swipe-continue .arrow-left  { animation: nudgeLeft  1.2s ease-in-out infinite; }
+  .swipe-continue .arrow-right { animation: nudgeRight 1.2s ease-in-out infinite; }
 
   /* ─── Celebration overlay ─── */
   .celebrate {
@@ -437,10 +538,13 @@
 
 <header>
   <div class="logo"><span class="lingo">Lingo</span><span class="play">Play</span></div>
-  <button class="category-btn" id="catBtn">🐼 Animals ▾</button>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <select class="native-select" id="nativeSelect"></select>
+    <button class="category-btn" id="catBtn">🐼 Animals ▾</button>
+  </div>
 </header>
 
-<!-- Language selector -->
+<!-- Learning language selector -->
 <div class="lang-strip" id="langStrip"></div>
 
 <div class="score-bar">
@@ -484,6 +588,12 @@
   <div class="hint-pill right">Know it! →</div>
 </div>
 
+<div class="swipe-continue" id="swipeContinue">
+  <span class="arrow-left">👈</span>
+  Swipe to continue
+  <span class="arrow-right">👉</span>
+</div>
+
 <!-- Done screen -->
 <div class="done-screen" id="doneScreen">
   <div class="done-emoji">🎉</div>
@@ -522,7 +632,7 @@ const LANGUAGES = {
   ja: { name: 'Japanese', flag: '🇯🇵', locale: 'ja-JP', label: '日本語' },
   it: { name: 'Italian',  flag: '🇮🇹', locale: 'it-IT', label: 'Italiano' },
   es: { name: 'Spanish',  flag: '🇪🇸', locale: 'es-ES', label: 'Español' },
-  fr: { name: 'French',   flag: '🇫🇷', locale: 'fr-FR', label: 'Français' },
+  en: { name: 'English',  flag: '🇬🇧', locale: 'en-GB', label: 'English' },
   ru: { name: 'Russian',  flag: '🇷🇺', locale: 'ru-RU', label: 'Русский' },
   hi: { name: 'Hindi',    flag: '🇮🇳', locale: 'hi-IN', label: 'हिन्दी' },
 };
@@ -593,7 +703,18 @@ const CATEGORIES = {
 
 // ─── State ───────────────────────────────────────────
 let currentLang = 'zh';
+let currentNative = 'en';
 let currentCat = 'animals';
+
+// ─── Helpers ─────────────────────────────────────────
+function getLangWord(card, lang) {
+  if (lang === 'en') return { w: card.en, r: '' };
+  return card[lang] || { w: card.en, r: '' };
+}
+function getNativeWord(card) {
+  if (currentNative === 'en') return card.en;
+  return (card[currentNative] && card[currentNative].w) || card.en;
+}
 let queue = [];
 let knowCount = 0;
 let practiceCount = 0;
@@ -618,7 +739,30 @@ function speak(text) {
   speechSynthesis.speak(u);
 }
 
-// ─── Build language picker ───────────────────────────
+// ─── Build native language picker ────────────────────
+const nativeSelect = document.getElementById('nativeSelect');
+const NATIVE_OPTIONS = [
+  { value: 'en', label: '🇬🇧 English' },
+  { value: 'zh', label: '🇨🇳 Chinese' },
+  { value: 'ja', label: '🇯🇵 Japanese' },
+  { value: 'it', label: '🇮🇹 Italian' },
+  { value: 'es', label: '🇪🇸 Spanish' },
+  { value: 'ru', label: '🇷🇺 Russian' },
+  { value: 'hi', label: '🇮🇳 Hindi' },
+];
+NATIVE_OPTIONS.forEach(opt => {
+  const o = document.createElement('option');
+  o.value = opt.value;
+  o.textContent = opt.label;
+  if (opt.value === currentNative) o.selected = true;
+  nativeSelect.appendChild(o);
+});
+nativeSelect.onchange = () => {
+  currentNative = nativeSelect.value;
+  renderCards();
+};
+
+// ─── Build language picker ────────────────────────────
 const langStrip = document.getElementById('langStrip');
 Object.entries(LANGUAGES).forEach(([key, lang]) => {
   const pill = document.createElement('button');
@@ -691,6 +835,7 @@ function renderCards() {
   const deck = document.getElementById('deck');
   deck.innerHTML = '';
   revealed = false;
+  document.getElementById('swipeContinue').classList.remove('show');
 
   const visible = queue.slice(0, 3);
   visible.reverse().forEach((card, i) => {
@@ -704,7 +849,7 @@ function renderCards() {
 }
 
 function createCardEl(card, isTop) {
-  const lang = card[currentLang];
+  const lang = getLangWord(card, currentLang);
   const word = lang.w;
   const rom  = lang.r || '';
 
@@ -716,7 +861,7 @@ function createCardEl(card, isTop) {
     <div class="card-emoji">${card.emoji}</div>
     <div class="card-chinese">${word}</div>
     <div class="card-pinyin">${rom}</div>
-    <div class="card-english">${card.en}</div>
+    <div class="card-english">${getNativeWord(card)}</div>
     <div class="tap-hint">👆 Tap to reveal</div>
     <button class="speak-btn" title="Hear it">🔊</button>
   `;
@@ -734,6 +879,7 @@ function createCardEl(card, isTop) {
         el.classList.add('revealed');
         revealed = true;
         speak(word);
+        document.getElementById('swipeContinue').classList.add('show');
       }
     });
   }
